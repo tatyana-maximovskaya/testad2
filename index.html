@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kiss Interactive Ad</title>
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+
+    <script type="text/javascript">
+
+        var Scene = function () {
+
+            // objects
+            var bottle = document.getElementById('bottle');
+            var kissPopup = document.getElementById("kissPopup");
+            var line = document.getElementById("progressLine");
+
+            this.selectedPlayer = null;
+            this.currentPlayer = null;
+            this.setCurrentPlayer = (player) => {
+                this.currentPlayer = player;
+                bottle.style.transform = "rotate(" + player.deg + "deg)";
+                console.log(player);
+                console.log(bottle.style.transform);
+                // TODO: highlight player's photo
+            }
+
+            this.usr = {deg: 210, src: document.getElementById('p4')};
+            this.players = [
+                {deg: 30, src: document.getElementById('p1')},
+                {deg: 90, src: document.getElementById('p2')},
+                {deg: 150, src: document.getElementById('p3')},
+                {deg: 270, src: document.getElementById('p5')},
+                {deg: 330, src: document.getElementById('p6')},
+            ];
+
+            var index = 4; // start from deg330 - p6
+
+
+            // functions
+            this.rotate = function (playerFrom, playerTo, callback) {
+                console.log("Start rotate");
+                playerFrom.src.classList.add('glow');
+
+                let pfx = this.findKeyframesPrefix();
+                let to = 360 + playerTo.deg;
+
+                let keyframes = '@' + pfx + 'keyframes spin { ' +
+                    '0% {' + pfx + 'transform:rotate( ' + playerFrom.deg +'deg ) }' +
+                    '100% {' + pfx + 'transform:rotate( ' + to + 'deg ) }' +
+                    '}';
+                // console.log(keyframes);
+
+                document.styleSheets[0].insertRule(keyframes, 0);
+
+                bottle.addEventListener("webkitAnimationEnd", callback);
+                bottle.addEventListener("animationend", callback);
+                bottle.classList.add('rotating');
+            };
+
+            this.rotateTo = () => {
+                let callback = () => {
+                    this.selectedPlayer.src.classList.add('glow');
+                    kissPopup.style.display = "flex";
+                    bottle.removeEventListener("webkitAnimationEnd", callback);
+                    bottle.removeEventListener("animationend", callback);
+                    document.styleSheets[0].deleteRule(0);
+                    //this.setCurrentPlayer(player);
+                };
+                this.rotate(this.currentPlayer, this.selectedPlayer, callback);
+            };
+
+
+            // this.rotateToRandom = () => {
+            //     let player = this.players[Math.floor(Math.random() * this.players.length)];
+            //     this.rotate(player);
+            // }
+
+
+            this.findKeyframesPrefix = () => {
+                var
+                    animationstring = 'animation',
+                    keyframeprefix = '',
+                    domPrefixes = 'Webkit Moz O ms Khtml'.split(' '),
+                    pfx = '';
+                if (bottle.style.animationName) {
+                    return "";
+                }
+                else {
+                    for (let i = 0; i < domPrefixes.length; i++) {
+                        if (bottle.style[domPrefixes[i] + 'AnimationName'] !== undefined) {
+                            pfx = domPrefixes[i];
+                            animationstring = pfx + 'Animation';
+                            keyframeprefix = '-' + pfx.toLowerCase() + '-';
+                            return keyframeprefix;
+                        }
+                    }
+                }
+            }
+
+
+            this.setProgressStep = (val) => {
+                let percent = 0;
+                switch (val) {
+                    case 1:
+                        percent = 33;
+                        break;
+                    case 2:
+                        percent = 66;
+                        break;
+                    case 3:
+                        percent = 100;
+                        break;
+                }
+                line.style.width = percent + "%";
+                document.getElementById("step1").classList.add("footer-text-disabled");
+            };
+
+            this.yesClick = () => {
+                kissPopup.style.display = "none";
+                this.setProgressStep(1);
+                var arrow = document.getElementById("arrow");
+                arrow.style.display = "block";
+                this.players[1].src.insertAdjacentElement("beforebegin", arrow);
+            };
+
+            this.noClick = () => {
+                kissPopup.style.display = "none";
+                this.setCurrentPlayer(this.selectedPlayer);
+                this.selectedPlayer = this.getNextPlayer();
+                this.rotateTo();
+            };
+
+            this.getNextPlayer = () => {
+                index = index+1;
+                if (index >= 5) {
+                    index = 0;
+                }
+                return this.players[index];
+            }
+
+            this.init = () => {
+                this.currentPlayer = this.players[index];
+                this.selectedPlayer = this.usr;
+                setTimeout(this.rotateTo(), 1000);
+            };
+        };
+
+
+
+
+        window.onload = function () {
+            window.scene = new Scene();
+            scene.init();
+        };
+
+        yesClick = () => {
+            window.scene.yesClick();
+        };
+
+        noClick = () => {
+            window.scene.noClick();
+        };
+
+
+
+    </script>
+
+    <style type="text/css">
+        html, body, .viewport {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+
+        body, div, button, span {
+            font-family: -apple-system, BlinkMacSystemFont, "Neue Haas Grotesk Text Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: calc(14px + (26 - 14) * ((100vw - 300px) / (1600 - 300)));
+        }
+
+        #game {
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-content: stretch;
+            background: url(img/back-large.png);
+            background-position: center top;
+            background-size: cover;
+            background-repeat: no-repeat;
+
+        }
+
+        .table-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            width: 100%;
+            flex-grow: 3;
+            padding-top: 15px;
+        }
+
+        .progress-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        .footer-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        .footer-wrap {
+            text-align: left;
+            align-self: center;
+        }
+
+        .circle-table {
+            width: 80vw;
+            /*padding-bottom: 50%;*/
+            position: relative;
+            /*2.8em = 2em*1.4 (2em = half the width of a link with img, 1.4 = sqrt(2))*/
+            /*padding: 2.8em;*/
+            /*border: dashed 1px;*/
+            border-radius: 50%;
+            margin: 1.75em auto 0;
+        }
+
+        .playerPhoto {
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 18vw;
+            /*width: 4em; height: 4em;*/
+            margin: -2em;
+        }
+
+        .player-img {
+            display: block;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 3px 9px rgba(0, 0, 0, .78);
+        }
+
+        .glow {
+            box-shadow: 0px 0px 20px 10px #fff !important;
+        }
+
+        .footer-text {
+            display: block;
+            font-size: 1rem;
+            line-height: 20px;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, .7)
+        }
+
+        .footer-text-disabled {
+            color: #9e9e9e !important;
+        }
+
+        .bottle {
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30%;
+            /*width: 4em; height: 4em;*/
+            margin: -2em;
+        }
+
+        .rotating {
+            -webkit-animation: spin 2s linear;
+            -moz-animation: spin 2s linear;
+            animation: spin 2s linear;
+        }
+
+        .deg0 {
+            transform: translate(40vw);
+        }
+
+        /*12em = half the width of the wrapper*/
+        .deg30 {
+            transform: rotate(30deg) translate(40vw) rotate(-30deg);
+        }
+
+        .deg90 {
+            transform: rotate(90deg) translate(40vw) rotate(-90deg);
+        }
+
+        .deg150 {
+            transform: rotate(150deg) translate(40vw) rotate(-150deg);
+        }
+
+        .deg210 {
+            transform: rotate(210deg) translate(40vw) rotate(-210deg);
+        }
+
+        .deg270 {
+            transform: rotate(270deg) translate(40vw) rotate(-270deg);
+        }
+
+        .deg330 {
+            transform: rotate(330deg) translate(40vw) rotate(-330deg);
+        }
+
+        .progress-wrap {
+            width: 70%;
+            height: 4vh;
+            align-self: flex-end;
+            position: relative;
+        }
+
+        .progress-bar {
+            background-color: #f1f1f1 !important;
+            height: 100%;
+            width: 100%;
+            border-radius: 5px;
+            box-shadow: 0 3px 9px rgba(0, 0, 0, .78);
+        }
+
+        .progress-line {
+            background-color: #9e9e9e !important;
+            height: 100%;
+            border-radius: 5px;
+        }
+
+        .img-container {
+            position: absolute;
+            top: -50%;
+            height: 200%;
+            margin: auto;
+        }
+
+        .progress-image {
+            max-width: 100%;
+            max-height: 100%;
+            margin: auto;
+        }
+
+        .button {
+            display: block;
+            margin: 0 auto;
+            height: 39px;
+            line-height: 35px;
+            padding: 0 20px 2px;
+            border: 0;
+            border-radius: 20px;
+            text-align: center;
+            overflow: visible;
+            cursor: pointer;
+        }
+
+        .button-gray {
+            color: #2c2c2c;
+            text-shadow: 0 1px 0 #fff;
+            box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 #c4c4ca, 0 3px 4px rgba(0, 0, 0, .3);
+            background: linear-gradient(180deg, #f1f1f7, #f0f0f6);
+        }
+
+        .button-red {
+            color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .5), inset 0 -1px 0 #b92f5b, inset 0 -2px 0 #b82f5d, inset 0 -3px 0 #f7496a, inset 0 -4px 0 #f7496a;
+            text-shadow: none;
+            background: linear-gradient(180deg, #ff2f41, #ff3367);
+        }
+
+        .button-green {
+            color: #fff;
+            text-shadow: 0 1px 0 rgba(0, 0, 0, .5);
+            box-shadow: inset 0 1px 0 #4ad135, inset 0 2px 0 #85e837, inset 0 -2px 0 #3c883c, inset 0 -3px 0 #35b79e, 0 1px 3px rgba(0, 0, 0, .5);
+            background: linear-gradient(180deg, #4bb536, #2ea946);
+        }
+
+        .popup {
+            box-shadow: 0 5px 8px 0 rgba(0,0,0,.5);
+            border-radius: 22px;
+        }
+
+        .kiss-popup {
+            display: none;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1;
+            position: absolute;
+            width: 40vw;
+            height: 40vw;
+            top: calc(50% - 20vw);
+            left: calc(50% - 20vw);
+            background-color: #efeff6;
+        }
+
+        .kiss-popup img {
+            width: 15vw;
+        }
+
+
+        .presents-popup {
+            display: none;
+            flex-direction: row;
+            justify-content: space-around;
+            z-index: 1;
+            position: absolute;
+            width: 48vw;
+            height: 48vw;
+            top: calc(50% - 24vw);
+            left: calc(50% - 24vw);
+            background-color: #efeff6;
+        }
+
+
+        .presents-col {
+            flex-direction: column;
+            justify-content: space-around;
+        }
+
+        .present-item {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding-top: 1vh;
+            border-radius: 12px;
+            box-shadow: inset 0 -2px 0 0 #dedee1;
+            background-color: #fff;
+        }
+
+        .present-item img{
+            width: 13vw;
+        }
+
+        .present-item span{
+            font-size: 4vh;
+            font-weight: bold;
+        }
+
+        .install-popup {
+            display: none;
+            flex-direction: column;
+            justify-content: space-around;
+            z-index: 1;
+            position: absolute;
+            width: 54vw;
+            height: 54vw;
+            top: calc(50% - 24vw);
+            left: calc(50% - 24vw);
+            background-color: #efeff6;
+        }
+
+        @-webkit-keyframes arrow-jump {
+            0%   { opacity: 0;}
+            100% { opacity: 1;
+                -webkit-transform: translateY(10px);
+                -moz-transform: translateY(10px);
+                transform: translateY(10px);
+            }
+
+        }
+        #arrow {
+            display:none;
+            width: 10vw;
+            -webkit-animation: arrow-jump 1s infinite; /* Safari 4+ */
+            -moz-animation:    arrow-jump 1s infinite; /* Fx 5+ */
+            -o-animation:      arrow-jump 1s infinite; /* Opera 12+ */
+            animation:         arrow-jump 1s infinite; /* IE 10+, Fx 29+ */
+            margin: 0 auto;
+        }
+
+
+    </style>
+
+</head>
+
+<body>
+<div id="game">
+    <div id="table" class="table-container">
+        <div class="circle-table">
+
+            <div id="kissPopup" class="popup kiss-popup">
+                <span>Хотите поцеловать?</span>
+                <button class="button button-green" onclick="yesClick()">Хочу</button>
+                <button class="button button-red" onclick="noClick()">Не&nbsp;хочу</button>
+            </div>
+
+            <div id="presentsPopup" class="presents-popup">
+                    <div class="presents-col">
+                        <div class="present-item">
+                            <img src="img/mojito.png" />
+                            <span>1</span>
+                        </div>
+                        <div class="present-item">
+                            <img src="img/bear.png" />
+                            <span>2</span>
+                        </div>
+                        <div class="present-item">
+                            <img src="img/flowers.png" />
+                            <span>5</span>
+                        </div>
+                    </div>
+                    <div class="presents-col">
+                        <div class="present-item">
+                            <img src="img/ring.png" />
+                            <span>10</span>
+                        </div>
+                        <div class="present-item">
+                            <img src="img/car.png" />
+                            <span>20</span>
+                        </div>
+                    </div>
+            </div>
+
+            <div id="installPopup" class="install-popup">
+                <span>Поздравляем!</span>
+                <span>Вы выиграли приветственный бонус!</span>
+                <span>Время сыграть в настоящую бутылочку!</span>
+                <button class="button button-green" onclick="installClick()">INSTALL NOW</button>
+            </div>
+
+
+            <img id="bottle" class="bottle" src="img/bottle1.png"/>
+            <div class="deg30 playerPhoto">
+                <img class="player-img" id="p1" src="img/boy1.png"/>
+            </div>
+            <div class="deg90 playerPhoto">
+                <img class="player-img" id="p2" src="img/girl1.png"/>
+            </div>
+            <div class="deg150 playerPhoto">
+                <img class="player-img" id="p3" src="img/boy2.png"/>
+            </div>
+            <div class="deg210 playerPhoto">
+                <img class="player-img" id="p4" src="img/user-icon.png"/>
+            </div>
+            <div class="deg270 playerPhoto">
+                <img class="player-img" id="p5" src="img/girl3.png"/>
+            </div>
+            <div class="deg330 playerPhoto">
+                <img class="player-img" id="p6" src="img/girl2.jpg"/>
+            </div>
+
+            <img id="arrow" src="img/hand.png">
+
+        </div>
+    </div>
+    <div id="progress" class="progress-container">
+        <div class="progress-wrap">
+            <div class="progress-bar">
+                <div id="progressLine" class="progress-line" style="width: 0%;"></div>
+                <div class="img-container" style="left: 25%;">
+                    <img src="img/lips.png" class="progress-image"/>
+                </div>
+                <div class="img-container" style="left: 60%;">
+                    <img src="img/gift.png" class="progress-image"/>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div id="footer" class="footer-container">
+        <div class="footer-wrap">
+            <div id="step1" class="footer-text">1) Получи поцелуй</div>
+            <div id="step2" class="footer-text">2) Подари и получи подарок</div>
+            <div class="footer-text">3) Получи 3 подарка или поцелуй</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
